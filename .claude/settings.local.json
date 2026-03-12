@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.beaconcha.in)",
+      "WebFetch(domain:www.figment.io)",
+      "Bash(npm create:*)",
+      "Read(//c/tmp/**)",
+      "Bash(cp -r /tmp/scorecraft_init/* /tmp/scorecraft_init/.gitignore /c/Users/inan0/Desktop/CursorProjects/beaasconscore_simulator/)",
+      "Bash(rm -rf /tmp/scorecraft_init)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(node -e \"console.log\\(process.execPath\\)\")",
+      "Bash(gh repo:*)",
+      "Bash(where.exe gh:*)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" --version)",
+      "Bash(\"/c/Users/inan0/AppData/Local/Programs/GitHub CLI/gh.exe\" --version)"
+    ]
+  }
+}
