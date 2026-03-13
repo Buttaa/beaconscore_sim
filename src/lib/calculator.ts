@@ -12,9 +12,35 @@ import {
 } from "./constants";
 
 /**
+ * Derive timeliness flag-rate caps from average inclusion delay.
+ *
+ * Post-Altair, attestation rewards use binary timeliness flags:
+ * - Head:   must be included in the very next slot (delay = 1)
+ * - Source: must be included within sqrt(SLOTS_PER_EPOCH) = 5 slots
+ * - Target: must be included within the same epoch (32 slots)
+ *
+ * Returns the maximum achievable rate for each flag given the average delay.
+ */
+function flagRatesFromDelay(avgDelay: number): {
+  source: number;
+  target: number;
+  head: number;
+} {
+  return {
+    head: clamp(2 - avgDelay, 0, 1),
+    source: clamp(1 - Math.max(0, avgDelay - 3) / 4, 0, 1),
+    target: clamp(1 - Math.max(0, avgDelay - 16) / 16, 0, 1),
+  };
+}
+
+/**
  * Calculate the full BeaconScore breakdown for a validator configuration.
  *
  * BeaconScore = actual_rewards / ideal_rewards, using protocol-native weights.
+ * Post-Altair: attestation rewards are based on binary timeliness flags,
+ * NOT scaled by 1/inclusionDelay. The inclusion delay determines which
+ * flags can be met (head requires delay=1, source <=5, target <=32).
+ *
  * When a component is absent (no proposals / not on sync committee),
  * its weight is redistributed proportionally among active components.
  */
@@ -22,30 +48,29 @@ export function calculateBeaconScore(config: ValidatorConfig): ScoreBreakdown {
   const luck = config.luckFactors;
 
   // --- Attestation Efficiency ---
+  // Effective inclusion delay: base delay increased by network missed slot rate
+  const effectiveDelay =
+    config.avgInclusionDelay + luck.missedSlotRate * 3; // 3x amplification factor
+
+  // Derive timeliness flag-rate caps from effective delay
+  const flagCaps = flagRatesFromDelay(effectiveDelay);
+
   // Apply luck factors: timing games reduce effective head vote rate
   const effectiveHeadRate = Math.max(
     0,
     config.headVoteRate - luck.timingGameImpact
   );
 
-  // Sub-component efficiencies
-  const sourceComponent = config.sourceVoteRate;
-  const targetComponent = config.targetVoteRate;
-  const headComponent = effectiveHeadRate;
+  // Cap each component by what the delay allows (timeliness flags are binary)
+  const sourceComponent = Math.min(config.sourceVoteRate, flagCaps.source);
+  const targetComponent = Math.min(config.targetVoteRate, flagCaps.target);
+  const headComponent = Math.min(effectiveHeadRate, flagCaps.head);
 
-  // Weighted attestation accuracy (before inclusion delay)
-  const attestAccuracy =
+  // Post-Altair: attester efficiency = weighted sum of flag rates (no 1/delay multiplier)
+  let attesterEfficiency =
     sourceComponent * ATTEST_SOURCE_WEIGHT +
     targetComponent * ATTEST_TARGET_WEIGHT +
     headComponent * ATTEST_HEAD_WEIGHT;
-
-  // Effective inclusion delay: base delay increased by network missed slot rate
-  // Each missed slot adds ~1 to the delay for affected attestations
-  const effectiveInclusionDelay =
-    config.avgInclusionDelay + luck.missedSlotRate * 3; // 3x amplification factor
-
-  // Attester efficiency = accuracy * (1 / inclusionDelay)
-  let attesterEfficiency = attestAccuracy * (1 / effectiveInclusionDelay);
 
   // Non-finality reduces all rewards
   if (luck.nonFinalityActive) {
@@ -108,7 +133,8 @@ export function calculateBeaconScore(config: ValidatorConfig): ScoreBreakdown {
     sourceComponent,
     targetComponent,
     headComponent,
-    effectiveInclusionDelay,
+    effectiveDelay,
+    flagCaps,
   };
 }
 
@@ -177,9 +203,12 @@ export function generateExplanation(
         `head vote rate (${(config.headVoteRate * 100).toFixed(1)}%)`
       );
     }
-    if (breakdown.effectiveInclusionDelay > 1.05) {
+    if (breakdown.effectiveDelay > 1.05) {
+      const cappedParts: string[] = [];
+      if (breakdown.flagCaps.head < 1) cappedParts.push(`head capped at ${(breakdown.flagCaps.head * 100).toFixed(0)}%`);
+      if (breakdown.flagCaps.source < 1) cappedParts.push(`source capped at ${(breakdown.flagCaps.source * 100).toFixed(0)}%`);
       details.push(
-        `effective inclusion delay of ${breakdown.effectiveInclusionDelay.toFixed(2)} slots`
+        `inclusion delay of ${breakdown.effectiveDelay.toFixed(2)} slots (${cappedParts.length > 0 ? cappedParts.join(", ") : "head votes most affected"})`
       );
     }
 
@@ -265,7 +294,7 @@ export function generatePresetChanges(presetId: string): {
   }
   if (cfg.avgInclusionDelay !== undefined && cfg.avgInclusionDelay > 1) {
     changes.push(
-      `Avg. inclusion delay → ${cfg.avgInclusionDelay.toFixed(1)} slots (default: 1.0, rewards scale as 1/delay)`
+      `Avg. inclusion delay → ${cfg.avgInclusionDelay.toFixed(1)} slots (default: 1.0, head votes require delay=1, source votes require delay≤5)`
     );
   }
 

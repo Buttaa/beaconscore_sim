@@ -217,7 +217,7 @@ export const PRESETS: Preset[] = [
     id: "late-inclusion",
     name: "Late Inclusion",
     description:
-      "All votes correct but average inclusion delay of 1.5 slots, reducing attestation rewards by 33%.",
+      "All votes correct but average inclusion delay of 1.5 slots. Post-Altair, head votes require inclusion in the very next slot — at 1.5 avg delay, most head vote rewards are lost.",
     config: {
       sourceVoteRate: 1,
       targetVoteRate: 1,
@@ -262,7 +262,7 @@ export const PRESETS: Preset[] = [
     id: "unlucky-inclusion",
     name: "Unlucky Inclusion Delay",
     description:
-      "Validator attests correctly but next block proposers keep missing their slots, delaying inclusion.",
+      "Validator attests correctly but next block proposers keep missing their slots, increasing inclusion delay and reducing timeliness flag rates (especially head votes).",
     config: {
       sourceVoteRate: 1,
       targetVoteRate: 1,

@@ -116,7 +116,7 @@ export function AttestationControls({
         max={5}
         step={0.1}
         formatValue={(v) => `${v.toFixed(1)} slots`}
-        tooltip="Average number of slots before your attestation is included in a block. 1 is perfect (next slot). Higher delays reduce rewards proportionally (1/delay)."
+        tooltip="Average number of slots before your attestation is included in a block. 1 is perfect (next slot). Post-Altair, delay affects which timeliness flags are met: head votes require delay=1, source votes require delay≤5."
       />
     </div>
   );

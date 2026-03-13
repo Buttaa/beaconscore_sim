@@ -50,7 +50,8 @@ export interface ScoreBreakdown {
   sourceComponent: number;
   targetComponent: number;
   headComponent: number;
-  effectiveInclusionDelay: number;
+  effectiveDelay: number;
+  flagCaps: { source: number; target: number; head: number };
 }
 
 export interface Preset {

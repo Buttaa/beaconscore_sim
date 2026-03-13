@@ -19,7 +19,7 @@ export function ComparisonRadar({ entityBreakdowns }: ComparisonRadarProps) {
       "Source",
       "Target",
       "Head",
-      "Incl. Delay",
+      "Timeliness",
       "Proposals",
       "Sync",
     ];
@@ -36,8 +36,8 @@ export function ComparisonRadar({ entityBreakdowns }: ComparisonRadarProps) {
               return breakdown.targetComponent * 100;
             case "Head":
               return breakdown.headComponent * 100;
-            case "Incl. Delay":
-              return (1 / breakdown.effectiveInclusionDelay) * 100;
+            case "Timeliness":
+              return Math.min(breakdown.flagCaps.source, breakdown.flagCaps.target, breakdown.flagCaps.head) * 100;
             case "Proposals":
               return config.onProposalDuty
                 ? breakdown.proposerEfficiency * 100

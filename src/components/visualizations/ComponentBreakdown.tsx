@@ -214,15 +214,17 @@ export function ComponentBreakdown({
             </div>
             <div className="flex items-center flex-wrap gap-x-1">
               <span className="text-text-muted">attest_eff =</span>
-              <span className="text-text-secondary">accuracy</span>
-              <span className="text-text-muted">&times;</span>
-              <span className="text-text-primary">
-                (1 / {fmt(breakdown.effectiveInclusionDelay)})
-              </span>
-              <span className="text-text-muted">=</span>
               <span className="text-[#60a5fa] font-semibold">
                 {fmt(breakdown.attesterEfficiency * 100)}%
               </span>
+              {breakdown.effectiveDelay > 1.05 && (
+                <>
+                  <span className="text-text-muted ml-1 text-[10px]">
+                    (delay {fmt(breakdown.effectiveDelay)} slots — head capped at {fmt(breakdown.flagCaps.head * 100)}%
+                    {breakdown.flagCaps.source < 1 && `, source at ${fmt(breakdown.flagCaps.source * 100)}%`})
+                  </span>
+                </>
+              )}
             </div>
           </div>
           <div className="flex gap-3 text-[10px] text-text-muted">
