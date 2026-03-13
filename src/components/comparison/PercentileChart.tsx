@@ -151,7 +151,7 @@ export function PercentileChart({ entityBreakdowns }: PercentileChartProps) {
               color: "var(--color-text-primary)",
               fontSize: "12px",
             }}
-            formatter={(value: number) => [value.toFixed(2), "Density"]}
+            formatter={(value) => [Number(value).toFixed(2), "Density"]}
             labelFormatter={(label) => `Score: ${Number(label).toFixed(2)}%`}
           />
           <Area
